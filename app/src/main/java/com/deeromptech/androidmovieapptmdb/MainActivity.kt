@@ -6,6 +6,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.fillMaxSize
+import com.deeromptech.androidmovieapptmdb.presentation.navigation.AppNavGraph
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -18,8 +21,10 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             MaterialTheme {
-                Surface {
-                    // TODO: AppNavGraph()
+                Surface(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    AppNavGraph()
                 }
             }
         }
