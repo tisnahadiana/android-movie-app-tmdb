@@ -6,4 +6,8 @@ object Constants {
     const val YOUTUBE_WATCH_BASE_URL = "https://www.youtube.com/watch?v="
     const val DEFAULT_LANGUAGE = "en-US"
     const val DEFAULT_PAGE_SIZE = 20
+
+    const val CONNECT_TIMEOUT_SECONDS = 30L
+    const val READ_TIMEOUT_SECONDS = 30L
+    const val WRITE_TIMEOUT_SECONDS = 30L
 }

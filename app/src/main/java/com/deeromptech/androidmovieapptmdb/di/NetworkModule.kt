@@ -9,6 +9,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -38,6 +39,7 @@ object NetworkModule {
     @Singleton
     fun provideLoggingInterceptor(): HttpLoggingInterceptor {
         return HttpLoggingInterceptor().apply {
+            redactHeader("Authorization")
             level = if (BuildConfig.DEBUG) {
                 HttpLoggingInterceptor.Level.BASIC
             } else {
@@ -53,6 +55,9 @@ object NetworkModule {
         loggingInterceptor: HttpLoggingInterceptor
     ): OkHttpClient {
         return OkHttpClient.Builder()
+            .connectTimeout(Constants.CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .readTimeout(Constants.READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .writeTimeout(Constants.WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .addInterceptor(authInterceptor)
             .addInterceptor(loggingInterceptor)
             .build()
