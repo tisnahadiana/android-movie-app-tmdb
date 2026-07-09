@@ -6,7 +6,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.deeromptech.androidmovieapptmdb.presentation.genre.GenreScreen
-import com.deeromptech.androidmovieapptmdb.presentation.movieList.MovieListPlaceholderScreen
+import com.deeromptech.androidmovieapptmdb.presentation.movieList.MovieListScreen
+import com.deeromptech.androidmovieapptmdb.presentation.movie_detail.MovieDetailPlaceholderScreen
 
 @Composable
 fun AppNavGraph() {
@@ -29,12 +30,26 @@ fun AppNavGraph() {
             )
         }
 
-        composable<MovieListRoute> { backStackEntry ->
-            val route = backStackEntry.toRoute<MovieListRoute>()
+        composable<MovieListRoute> {
+            MovieListScreen(
+                onBackClick = {
+                    navController.popBackStack()
+                },
+                onMovieClick = { movieId ->
+                    navController.navigate(
+                        MovieDetailRoute(
+                            movieId = movieId
+                        )
+                    )
+                }
+            )
+        }
 
-            MovieListPlaceholderScreen(
-                genreId = route.genreId,
-                genreName = route.genreName,
+        composable<MovieDetailRoute> { backStackEntry ->
+            val route = backStackEntry.toRoute<MovieDetailRoute>()
+
+            MovieDetailPlaceholderScreen(
+                movieId = route.movieId,
                 onBackClick = {
                     navController.popBackStack()
                 }
