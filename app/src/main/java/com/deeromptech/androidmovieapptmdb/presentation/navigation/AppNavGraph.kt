@@ -4,10 +4,9 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.toRoute
 import com.deeromptech.androidmovieapptmdb.presentation.genre.GenreScreen
+import com.deeromptech.androidmovieapptmdb.presentation.movieDetail.MovieDetailScreen
 import com.deeromptech.androidmovieapptmdb.presentation.movieList.MovieListScreen
-import com.deeromptech.androidmovieapptmdb.presentation.movie_detail.MovieDetailPlaceholderScreen
 
 @Composable
 fun AppNavGraph() {
@@ -45,11 +44,8 @@ fun AppNavGraph() {
             )
         }
 
-        composable<MovieDetailRoute> { backStackEntry ->
-            val route = backStackEntry.toRoute<MovieDetailRoute>()
-
-            MovieDetailPlaceholderScreen(
-                movieId = route.movieId,
+        composable<MovieDetailRoute> {
+            MovieDetailScreen(
                 onBackClick = {
                     navController.popBackStack()
                 }
