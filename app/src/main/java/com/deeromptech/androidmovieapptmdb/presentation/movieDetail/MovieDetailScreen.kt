@@ -1,16 +1,20 @@
 package com.deeromptech.androidmovieapptmdb.presentation.movieDetail
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -18,9 +22,8 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -33,19 +36,30 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
 import coil.compose.AsyncImage
+import com.deeromptech.androidmovieapptmdb.core.common.ErrorMessageMapper
 import com.deeromptech.androidmovieapptmdb.core.common.UiState
 import com.deeromptech.androidmovieapptmdb.domain.model.MovieDetail
+import com.deeromptech.androidmovieapptmdb.domain.model.Review
+import com.deeromptech.androidmovieapptmdb.domain.model.Video
+import com.deeromptech.androidmovieapptmdb.presentation.component.AppendErrorItem
+import com.deeromptech.androidmovieapptmdb.presentation.component.AppendLoadingItem
 import com.deeromptech.androidmovieapptmdb.presentation.component.EmptyView
 import com.deeromptech.androidmovieapptmdb.presentation.component.ErrorView
 import com.deeromptech.androidmovieapptmdb.presentation.component.LoadingView
-import com.deeromptech.androidmovieapptmdb.presentation.movie_detail.MovieDetailViewModel
+import com.deeromptech.androidmovieapptmdb.presentation.component.ReviewItem
+import com.deeromptech.androidmovieapptmdb.presentation.component.TrailerSection
+import com.deeromptech.androidmovieapptmdb.presentation.movieDetail.MovieDetailViewModel
 import java.util.Locale
 
 @Composable
@@ -53,20 +67,36 @@ fun MovieDetailScreen(
     onBackClick: () -> Unit,
     viewModel: MovieDetailViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val detailState by viewModel.detailState.collectAsStateWithLifecycle()
+    val trailerState by viewModel.trailerState.collectAsStateWithLifecycle()
+    val reviews = viewModel.reviews.collectAsLazyPagingItems()
 
     MovieDetailContent(
         detailState = detailState,
+        trailerState = trailerState,
+        reviews = reviews,
         onBackClick = onBackClick,
-        onRetryClick = viewModel::loadMovieDetail
+        onRetryDetailClick = viewModel::loadMovieDetail,
+        onRetryTrailerClick = viewModel::loadTrailer,
+        onTrailerClick = { youtubeUrl ->
+            openUrl(
+                context = context,
+                url = youtubeUrl
+            )
+        }
     )
 }
 
 @Composable
 private fun MovieDetailContent(
     detailState: UiState<MovieDetail>,
+    trailerState: UiState<Video>,
+    reviews: LazyPagingItems<Review>,
     onBackClick: () -> Unit,
-    onRetryClick: () -> Unit
+    onRetryDetailClick: () -> Unit,
+    onRetryTrailerClick: () -> Unit,
+    onTrailerClick: (String) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -80,26 +110,34 @@ private fun MovieDetailContent(
         when (detailState) {
             UiState.Loading -> {
                 LoadingView(
+                    modifier = Modifier.weight(1f),
                     message = "Loading movie detail..."
                 )
             }
 
             UiState.Empty -> {
                 EmptyView(
+                    modifier = Modifier.weight(1f),
                     message = "Movie detail is not available."
                 )
             }
 
             is UiState.Error -> {
                 ErrorView(
+                    modifier = Modifier.weight(1f),
                     message = detailState.message,
-                    onRetryClick = onRetryClick
+                    onRetryClick = onRetryDetailClick
                 )
             }
 
             is UiState.Success -> {
                 MovieDetailSuccessContent(
-                    movieDetail = detailState.data
+                    modifier = Modifier.weight(1f),
+                    movieDetail = detailState.data,
+                    trailerState = trailerState,
+                    reviews = reviews,
+                    onRetryTrailerClick = onRetryTrailerClick,
+                    onTrailerClick = onTrailerClick
                 )
             }
         }
@@ -113,8 +151,8 @@ private fun MovieDetailHeader(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .height(56.dp),
+            .height(56.dp)
+            .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         TextButton(
@@ -141,57 +179,145 @@ private fun MovieDetailHeader(
 
 @Composable
 private fun MovieDetailSuccessContent(
-    movieDetail: MovieDetail
+    movieDetail: MovieDetail,
+    trailerState: UiState<Video>,
+    reviews: LazyPagingItems<Review>,
+    onRetryTrailerClick: () -> Unit,
+    onTrailerClick: (String) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
-    ) {
-        MovieBackdrop(
-            backdropUrl = movieDetail.backdropUrl,
-            title = movieDetail.title
+    val bottomPadding = WindowInsets.navigationBars
+        .asPaddingValues()
+        .calculateBottomPadding() + 24.dp
+
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(
+            bottom = bottomPadding
         )
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            MovieTitleSection(
-                movieDetail = movieDetail
+    ) {
+        item {
+            MovieBackdrop(
+                backdropUrl = movieDetail.backdropUrl,
+                title = movieDetail.title
             )
+        }
 
-            Spacer(
-                modifier = Modifier.height(16.dp)
-            )
+        item {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                MovieTitleSection(
+                    movieDetail = movieDetail
+                )
 
-            MovieInfoCard(
-                movieDetail = movieDetail
-            )
+                Spacer(
+                    modifier = Modifier.height(16.dp)
+                )
 
-            Spacer(
-                modifier = Modifier.height(20.dp)
-            )
+                MovieInfoCard(
+                    movieDetail = movieDetail
+                )
 
-            MovieGenreSection(
-                movieDetail = movieDetail
-            )
+                Spacer(
+                    modifier = Modifier.height(20.dp)
+                )
 
-            Spacer(
-                modifier = Modifier.height(20.dp)
-            )
+                MovieGenreSection(
+                    movieDetail = movieDetail
+                )
 
-            MovieOverviewSection(
-                overview = movieDetail.overview
-            )
+                Spacer(
+                    modifier = Modifier.height(20.dp)
+                )
 
-            Spacer(
-                modifier = Modifier.height(24.dp)
-            )
+                MovieOverviewSection(
+                    overview = movieDetail.overview
+                )
 
-            ProgressNextSection()
+                Spacer(
+                    modifier = Modifier.height(20.dp)
+                )
+
+                TrailerSection(
+                    trailerState = trailerState,
+                    onTrailerClick = onTrailerClick,
+                    onRetryClick = onRetryTrailerClick
+                )
+
+                Spacer(
+                    modifier = Modifier.height(24.dp)
+                )
+
+                ReviewsHeader()
+            }
+        }
+
+        when (val refreshState = reviews.loadState.refresh) {
+            is LoadState.Loading -> {
+                item {
+                    AppendLoadingItem()
+                }
+            }
+
+            is LoadState.Error -> {
+                item {
+                    AppendErrorItem(
+                        message = ErrorMessageMapper.map(refreshState.error),
+                        onRetryClick = {
+                            reviews.retry()
+                        }
+                    )
+                }
+            }
+
+            is LoadState.NotLoading -> {
+                if (reviews.itemCount == 0) {
+                    item {
+                        NoReviewsItem()
+                    }
+                } else {
+                    items(
+                        count = reviews.itemCount
+                    ) { index ->
+                        val review = reviews[index]
+
+                        if (review != null) {
+                            ReviewItem(
+                                modifier = Modifier.padding(
+                                    start = 16.dp,
+                                    end = 16.dp,
+                                    bottom = 12.dp
+                                ),
+                                review = review
+                            )
+                        }
+                    }
+
+                    when (val appendState = reviews.loadState.append) {
+                        is LoadState.Loading -> {
+                            item {
+                                AppendLoadingItem()
+                            }
+                        }
+
+                        is LoadState.Error -> {
+                            item {
+                                AppendErrorItem(
+                                    message = ErrorMessageMapper.map(appendState.error),
+                                    onRetryClick = {
+                                        reviews.retry()
+                                    }
+                                )
+                            }
+                        }
+
+                        else -> Unit
+                    }
+                }
+            }
         }
     }
 }
@@ -451,31 +577,51 @@ private fun MovieOverviewSection(
 }
 
 @Composable
-private fun ProgressNextSection() {
+private fun ReviewsHeader() {
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = "User Reviews",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(
+            modifier = Modifier.height(8.dp)
+        )
+    }
+}
+
+@Composable
+private fun NoReviewsItem() {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 1.dp
         )
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = "Next",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold
-            )
+        Text(
+            modifier = Modifier.padding(16.dp),
+            text = "No reviews yet.",
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }
+}
 
-            Spacer(
-                modifier = Modifier.height(4.dp)
-            )
+private fun openUrl(
+    context: Context,
+    url: String
+) {
+    runCatching {
+        val intent = Intent(
+            Intent.ACTION_VIEW,
+            Uri.parse(url)
+        )
 
-            Text(
-                text = "Trailer and reviews will be added in the next progress.",
-                style = MaterialTheme.typography.bodySmall
-            )
-        }
+        context.startActivity(intent)
     }
 }
 
