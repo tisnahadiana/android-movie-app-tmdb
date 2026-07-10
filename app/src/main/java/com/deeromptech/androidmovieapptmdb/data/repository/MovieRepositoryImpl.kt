@@ -14,8 +14,8 @@ import com.deeromptech.androidmovieapptmdb.domain.model.MovieDetail
 import com.deeromptech.androidmovieapptmdb.domain.model.Review
 import com.deeromptech.androidmovieapptmdb.domain.model.Video
 import com.deeromptech.androidmovieapptmdb.domain.repository.MovieRepository
-import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
 
 class MovieRepositoryImpl @Inject constructor(
     private val api: TmdbApi
