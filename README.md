@@ -112,6 +112,8 @@ GET /3/movie/{movie_id}/videos
 
 ```text
 app/src/main/java/com/deeromptech/androidmovieapptmdb/
+├── MainActivity.kt
+├── MovieApplication.kt
 ├── core/
 │   └── common/
 │       ├── Constants.kt
@@ -119,23 +121,50 @@ app/src/main/java/com/deeromptech/androidmovieapptmdb/
 │       └── UiState.kt
 ├── data/
 │   ├── mapper/
+│   │   ├── GenreMapper.kt
+│   │   ├── MovieDetailMapper.kt
+│   │   ├── MovieMapper.kt
+│   │   ├── ReviewMapper.kt
+│   │   └── VideoMapper.kt
 │   ├── remote/
 │   │   ├── api/
+│   │   │   └── TmdbApi.kt
 │   │   ├── dto/
+│   │   │   ├── GenreDto.kt
+│   │   │   ├── MovieDetailDto.kt
+│   │   │   ├── MovieDto.kt
+│   │   │   ├── PagedResponseDto.kt
+│   │   │   ├── ReviewDto.kt
+│   │   │   └── VideoDto.kt
 │   │   └── paging/
+│   │       ├── MoviePagingSource.kt
+│   │       └── ReviewPagingSource.kt
 │   └── repository/
+│       └── MovieRepositoryImpl.kt
 ├── di/
+│   ├── NetworkModule.kt
+│   └── RepositoryModule.kt
 ├── domain/
 │   ├── model/
+│   │   ├── Genre.kt
+│   │   ├── Movie.kt
+│   │   ├── MovieDetail.kt
+│   │   ├── Review.kt
+│   │   └── Video.kt
 │   ├── repository/
+│   │   └── MovieRepository.kt
 │   └── usecase/
+│       ├── GetGenresUseCase.kt
+│       ├── GetMovieDetailUseCase.kt
+│       ├── GetMovieReviewsUseCase.kt
+│       ├── GetMoviesByGenreUseCase.kt
+│       └── GetMovieVideosUseCase.kt
 └── presentation/
     ├── component/
     ├── genre/
-    ├── movie_list/
-    ├── movie_detail/
+    ├── movieList/
+    ├── movieDetail/
     └── navigation/
-```
 
 ## Setup
 
